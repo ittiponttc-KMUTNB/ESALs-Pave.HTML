@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ESAL Calculator v2.6 — ITM-KMUTNB</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root {
+  --bg:#0d1117; --s1:#161b22; --s2:#1c2230; --s3:#232d3f;
+  --bd:#2d3748; --bd2:#3a4a60;
+  --amber:#f6ad55;
+  --rigid:#63b3ed; --rigid-bg:rgba(99,179,237,0.10);
+  --flex:#68d391;
+  --tx:#e2e8f0; --tx3:#718096;
+  --font:'Sarabun',sans-serif; --mono:'JetBrains Mono',monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:var(--font);background:var(--bg);color:var(--tx);font-size:14px;}
+.body{max-width:1150px;margin:0 auto;padding:25px;}
+.card{background:var(--s1);border:1px solid var(--bd);border-radius:12px;padding:22px;margin-bottom:16px;}
+.ctitle{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--tx3);margin-bottom:18px;}
+.cbar{width:3px;height:14px;background:var(--amber);border-radius:2px;}
+.st-grid{display:grid;grid-template-columns:1.2fr 1fr;gap:15px;}
+.pbox{background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:18px;}
+.d-wrap{display:flex;flex-wrap:wrap;gap:8px;}
+.d-chip{padding:8px 14px;background:var(--s3);border:1px solid var(--bd2);border-radius:8px;cursor:pointer;transition:0.2s;text-align:center;min-width:90px;}
+.d-chip.on{background:var(--rigid-bg);border-color:var(--rigid);color:var(--rigid);box-shadow:0 0 10px rgba(99,179,237,0.15);}
+.sn-it{flex:1;text-align:center;}
+.sn-it label{display:block;font-size:10px;color:var(--tx3);margin-bottom:6px;font-family:var(--mono);}
+.sn-it input{background:var(--s3);border:1px solid var(--bd2);border-radius:8px;color:var(--flex);font-family:var(--mono);font-size:18px;font-weight:600;padding:10px;text-align:center;width:100%;}
+.btn-calc{width:100%;padding:14px;background:linear-gradient(135deg,#e6993d,var(--amber));border:none;border-radius:8px;color:#1a1200;font-weight:700;cursor:pointer;margin-top:10px;font-size:15px;}
+.dtbl{width:100%;border-collapse:collapse;font-size:12px;margin-top:10px;}
+.dtbl th{background:var(--s2);padding:10px;border-bottom:2px solid var(--bd);color:var(--tx3);text-align:right;}
+.dtbl td{padding:8px;border-bottom:1px solid rgba(45,55,72,0.5);text-align:right;font-family:var(--mono);}
+.col-r{color:var(--rigid);} .col-f{color:var(--flex);} .col-a{color:var(--amber);}
+</style>
+</head>
+<body>
+<div class="body">
+
+  <div class="card">
+    <div class="ctitle"><div class="cbar"></div>ข้อมูลเบื้องต้น</div>
+    <label style="font-size:11px;color:var(--tx3);font-weight:700;">ชื่อโครงการ (PROJECT NAME)</label>
+    <input type="text" id="project_name" placeholder="ระบุชื่อโครงการ..."
+           style="background:var(--s3);border:1px solid var(--bd2);border-radius:8px;color:var(--tx);padding:10px;width:100%;font-family:var(--font);margin-top:8px;outline:none;" oninput="resetResult()">
+  </div>
+
+  <div class="card">
+    <div class="ctitle"><div class="cbar"></div>พารามิเตอร์การออกแบบ</div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:15px;">
+      <div class="sn-it"><label>n (ปี)</label><input type="number" id="p_n" value="20" oninput="resetResult()"></div>
+      <div class="sn-it"><label>r (%)</label><input type="number" id="p_r" value="4.5" oninput="resetResult()"></div>
+      <div class="sn-it"><label>LDF</label><input type="number" id="p_ldf" value="0.90" oninput="resetResult()"></div>
+      <div class="sn-it"><label>DDF</label><input type="number" id="p_ddf" value="0.50" oninput="resetResult()"></div>
+    </div>
+    <div style="margin-top:20px;">
+      <label style="font-size:11px;color:var(--tx3);font-weight:700;">Terminal Serviceability (pt)</label>
+      <div style="display:flex;gap:8px;margin-top:8px;">
+        <button class="d-chip" onclick="setPt(2.0,this)">2.0</button>
+        <button class="d-chip on" onclick="setPt(2.5,this)">2.5</button>
+        <button class="d-chip" onclick="setPt(3.0,this)">3.0</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="ctitle"><div class="cbar"></div>พารามิเตอร์โครงสร้างผิวทาง</div>
+    <div class="st-grid">
+      <div class="pbox">
+        <div style="font-size:10.5px;font-weight:700;margin-bottom:12px;color:var(--rigid)">RIGID — ความหนาคอนกรีต D</div>
+        <div class="d-wrap" id="d-chips"></div>
+      </div>
+      <div class="pbox">
+        <div style="font-size:10.5px;font-weight:700;margin-bottom:12px;color:var(--flex)">FLEXIBLE — STRUCTURAL NUMBER SN</div>
+        <div style="display:flex;gap:10px;">
+          <div class="sn-it"><label>SN₁</label><input type="number" id="sn1" value="5.0" oninput="resetResult()"></div>
+          <div class="sn-it"><label>SN₂</label><input type="number" id="sn2" value="6.0" oninput="resetResult()"></div>
+          <div class="sn-it"><label>SN₃</label><input type="number" id="sn3" value="7.0" oninput="resetResult()"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="ctitle"><div class="cbar"></div>ปริมาณจราจรและการคำนวณ</div>
+    <div style="margin-bottom:15px;max-width:300px;">
+      <label style="font-size:11px;color:var(--tx3);">Total Traffic (คัน/วัน)</label>
+      <input type="number" id="total_traffic" value="12985" oninput="updTraffic();resetResult()"
+             style="background:var(--s2);border:1px solid var(--bd);border-radius:8px;color:var(--tx);padding:10px;width:100%;font-family:var(--mono);">
+    </div>
+    <div style="display:grid;grid-template-columns:1.5fr repeat(6,1fr);gap:10px;">
+      <div class="sn-it"><label>Sum Truck</label><input type="text" id="sum_adtt" readonly style="color:var(--amber)"></div>
+      <div class="sn-it"><label>MB</label><input type="number"  id="nMB"  value="1"    oninput="updTraffic();resetResult()"></div>
+      <div class="sn-it"><label>HB</label><input type="number"  id="nHB"  value="52"   oninput="updTraffic();resetResult()"></div>
+      <div class="sn-it"><label>MT</label><input type="number"  id="nMT"  value="1308" oninput="updTraffic();resetResult()"></div>
+      <div class="sn-it"><label>HT</label><input type="number"  id="nHT"  value="743"  oninput="updTraffic();resetResult()"></div>
+      <div class="sn-it"><label>TR</label><input type="number"  id="nTR"  value="2175" oninput="updTraffic();resetResult()"></div>
+      <div class="sn-it"><label>STR</label><input type="number" id="nSTR" value="1344" oninput="updTraffic();resetResult()"></div>
+    </div>
+    <button class="btn-calc" onclick="calc()">⚡ คำนวณ ESAL สะสม</button>
+  </div>
+
+  <div id="res" style="display:none;">
+
+    <div class="card" style="display:flex;align-items:center;justify-content:flex-end;gap:12px;padding:14px 22px;">
+      <span id="pdf-msg" style="font-size:12px;color:var(--tx3);"></span>
+      <button id="btn-pdf" onclick="exportPDF()"
+              style="padding:10px 26px;border-radius:6px;cursor:pointer;
+                     background:var(--s3);color:var(--amber);border:2px solid var(--amber);
+                     font-weight:700;font-size:14px;letter-spacing:0.03em;">
+        ⬇ Export PDF (DOS Style)
+      </button>
+    </div>
+
+    <div class="card">
+      <div class="ctitle"><div class="cbar"></div>📊 ตารางสรุปผลการคำนวณ ESAL สะสม</div>
+      <div style="overflow-x:auto"><table class="dtbl"><thead id="h-head"></thead><tbody id="h-body"></tbody></table></div>
+    </div>
+
+    <div class="card">
+      <div class="ctitle"><div class="cbar"></div>ตารางรายงานค่า Truck Factor</div>
+      <div style="margin-bottom:20px;">
+        <div style="font-size:13px;font-weight:700;margin-bottom:10px;">ตารางที่ 3-5 Truck Factor — Rigid</div>
+        <div style="overflow-x:auto"><table class="dtbl"><thead id="tf-r-head"></thead><tbody id="tf-r-body"></tbody></table></div>
+      </div>
+      <div>
+        <div style="font-size:13px;font-weight:700;margin-bottom:10px;">ตารางที่ 3-2 Truck Factor — Flexible</div>
+        <div style="overflow-x:auto"><table class="dtbl"><thead id="tf-f-head"></thead><tbody id="tf-f-body"></tbody></table></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ── data ──────────────────────────────────────────────
+const TKP  = 2.2046;
+const VEH  = {
+  MB:  {d:'Medium Bus',   ax:[[4,1],[11,1]]},
+  HB:  {d:'Heavy Bus',    ax:[[5,1],[20,2]]},
+  MT:  {d:'Medium Truck', ax:[[4,1],[11,1]]},
+  HT:  {d:'Heavy Truck',  ax:[[5,1],[20,2]]},
+  TR:  {d:'Full Trailer', ax:[[5,1],[20,2],[11,1],[11,1]]},
+  STR: {d:'Semi-Trailer', ax:[[5,1],[20,2],[20,2]]}
+};
+const CODES = ['MB','HB','MT','HT','TR','STR'];
+const DCM   = {10:25,11:28,12:30,13:32,14:35,15:38,16:40};
+let PT = 2.5, selD = new Set([11,12,13,14]), _last = null;
+
+function resetResult(){ document.getElementById('res').style.display='none'; _last=null; }
+function setPt(v,b){ resetResult(); PT=v; document.querySelectorAll('.d-chip').forEach(x=>x.classList.remove('on')); b.classList.add('on'); }
+
+function buildD(){
+  const w=document.getElementById('d-chips'); w.innerHTML='';
+  [10,11,12,13,14,15,16].forEach(d=>{
+    const e=document.createElement('div');
+    e.className='d-chip'+(selD.has(d)?' on':'');
+    e.innerHTML=`D=${d}"<br><span style="font-size:10px;color:var(--tx3)">${DCM[d]}cm</span>`;
+    e.onclick=()=>{ resetResult(); selD.has(d)?(selD.size>1&&selD.delete(d)):(selD.size<5&&selD.add(d)); buildD(); };
+    w.appendChild(e);
+  });
+}
+
+function updTraffic(){
+  let s=0; CODES.forEach(c=>s+=parseFloat(document.getElementById('n'+c).value)||0);
+  document.getElementById('sum_adtt').value=s;
+}
+
+// ── EALF ─────────────────────────────────────────────
+function eaR(L1t,L2,D,pt){
+  const L1=L1t*TKP, Gt=Math.log10((4.5-pt)/3),
+        Bx=1+3.63*Math.pow(L1+L2,5.2)/(Math.pow(D+1,8.46)*Math.pow(L2,3.52)),
+        B18=1+3.63*Math.pow(19,5.2)/Math.pow(D+1,8.46);
+  return Math.pow(10,4.62*Math.log10(L1+L2)-3.28*Math.log10(L2)-4.62*Math.log10(19)+Gt*(1/B18-1/Bx));
+}
+function eaF(L1t,L2,SN,pt){
+  const L1=L1t*TKP, Gt=Math.log10((4.2-pt)/2.7),
+        Bx=0.4+0.081*Math.pow(L1+L2,3.23)/(Math.pow(SN+1,5.19)*Math.pow(L2,3.23)),
+        B18=0.4+0.081*Math.pow(19,3.23)/Math.pow(SN+1,5.19);
+  return Math.pow(10,4.79*Math.log10(L1+L2)-4.33*Math.log10(L2)-4.79*Math.log10(19)+Gt*(1/B18-1/Bx));
+}
+function TF(c,t,p,pt){ return VEH[c].ax.reduce((s,[L1,L2])=>s+(t==='r'?eaR(L1,L2,p,pt):eaF(L1,L2,p,pt)),0); }
+
+// ── calc ─────────────────────────────────────────────
+function calc(){
+  const n=parseFloat(document.getElementById('p_n').value),
+        r=parseFloat(document.getElementById('p_r').value)/100,
+        GF=r>0?(Math.pow(1+r,n)-1)/r:n,
+        ldf=parseFloat(document.getElementById('p_ldf').value),
+        ddf=parseFloat(document.getElementById('p_ddf').value),
+        proj=document.getElementById('project_name').value||'(NOT SPECIFIED)',
+        Darr=[...selD].sort((a,b)=>a-b),
+        SNarr=[parseFloat(document.getElementById('sn1').value),
+               parseFloat(document.getElementById('sn2').value),
+               parseFloat(document.getElementById('sn3').value)];
+
+  document.getElementById('res').style.display='block';
+
+  // header
+  document.getElementById('h-head').innerHTML=
+    `<tr><th>CODE</th><th>ประเภทรถ</th><th>ADTT</th>`+
+    Darr.map(d=>`<th class="col-r">D=${d}"</th>`).join('')+
+    SNarr.map(sn=>`<th class="col-f">SN=${sn}</th>`).join('')+`</tr>`;
+
+  const bd=document.getElementById('h-body'); bd.innerHTML='';
+  const totals=new Array(Darr.length+SNarr.length).fill(0);
+  const counts={};
+
+  CODES.forEach(c=>{
+    const cnt=parseFloat(document.getElementById('n'+c).value)||0; counts[c]=cnt;
+    let html=`<td><b>${c}</b></td><td>${VEH[c].d}</td><td>${cnt}</td>`;
+    Darr.forEach((d,i)=>{const v=cnt*TF(c,'r',d,PT)*ldf*ddf*365*GF;totals[i]+=v;html+=`<td class="col-r">${Math.round(v).toLocaleString()}</td>`;});
+    SNarr.forEach((sn,i)=>{const v=cnt*TF(c,'f',sn,PT)*ldf*ddf*365*GF;totals[Darr.length+i]+=v;html+=`<td class="col-f">${Math.round(v).toLocaleString()}</td>`;});
+    const tr=document.createElement('tr'); tr.innerHTML=html; bd.appendChild(tr);
+  });
+  const ftr=document.createElement('tr'); ftr.style.background='var(--s2)';
+  ftr.innerHTML=`<td colspan="3"><b>รวม ESAL สะสม (${n} ปี)</b></td>`+totals.map(v=>`<td class="col-a"><b>${Math.round(v).toLocaleString()}</b></td>`).join('');
+  bd.appendChild(ftr);
+
+  // TF tables
+  const rtb=document.getElementById('tf-r-body'); rtb.innerHTML='';
+  const ftb=document.getElementById('tf-f-body'); ftb.innerHTML='';
+  document.getElementById('tf-r-head').innerHTML=`<tr><th>รหัส</th><th>ประเภท</th>${Darr.map(d=>`<th>D=${d}"</th>`).join('')}</tr>`;
+  document.getElementById('tf-f-head').innerHTML=`<tr><th>รหัส</th><th>ประเภท</th>${SNarr.map(sn=>`<th>SN=${sn}</th>`).join('')}</tr>`;
+  CODES.forEach(c=>{
+    rtb.innerHTML+=`<tr><td>${c}</td><td>${VEH[c].d}</td>`+Darr.map(d=>`<td class="col-r">${TF(c,'r',d,PT).toFixed(3)}</td>`).join('')+`</tr>`;
+    ftb.innerHTML+=`<tr><td>${c}</td><td>${VEH[c].d}</td>`+SNarr.map(sn=>`<td class="col-f">${TF(c,'f',sn,PT).toFixed(3)}</td>`).join('')+`</tr>`;
+  });
+
+  _last={n,r,GF,ldf,ddf,proj,Darr,SNarr,totals,counts};
+  window.scrollTo({top:document.getElementById('res').offsetTop,behavior:'smooth'});
+}
+
+// ══════════════════════════════════════════════════════
+//  Export PDF — jsPDF วาดทุก element ด้วย y coordinate
+//  A4 portrait · margin 1.75cm · Courier 7.8pt · LH 3.5mm
+// ══════════════════════════════════════════════════════
+function exportPDF(){
+  if(!_last){ alert('กรุณากดคำนวณก่อนครับ'); return; }
+
+  const msg=document.getElementById('pdf-msg');
+
+  // jsPDF พร้อมใช้แล้วเพราะ <script> โหลดล่วงหน้า
+  if(typeof window.jspdf==='undefined'||!window.jspdf.jsPDF){
+    msg.textContent='⏳ โหลด jsPDF...';
+    let t=0;
+    const iv=setInterval(()=>{
+      if(typeof window.jspdf!=='undefined'&&window.jspdf.jsPDF){ clearInterval(iv); msg.textContent=''; _doPDF(); }
+      else if(++t>30){ clearInterval(iv); msg.textContent='❌ โหลดไม่สำเร็จ'; }
+    },200);
+    return;
+  }
+  msg.textContent='';
+  _doPDF();
+}
+
+function _doPDF(){
+  const {jsPDF}=window.jspdf;
+  const {n,r,GF,ldf,ddf,proj,Darr,SNarr,totals,counts}=_last;
+
+  // ── geometry ──
+  const ML=17.5, MT=17.5, CW=175, CH=262;
+  const FS=7.8;
+
+  // pad helpers
+  const pR=(s,w)=>{s=String(s);return s.length>=w?s.slice(0,w):s+' '.repeat(w-s.length);};
+  const pL=(s,w)=>{s=String(s);return s.length>=w?s.slice(-w):' '.repeat(w-s.length)+s;};
+
+  // ── สร้าง content ทั้งหมดเป็น array of lines ก่อน ──
+  const CW_CODE=5,CW_TYPE=14,CW_ADTT=8,CW_NUM=12;
+  const VTW=13,DW=8,SW=8;
+
+  function mkEsalHdr(){
+    let s=pR('CODE',CW_CODE)+' '+pR('TYPE',CW_TYPE)+pL('ADTT',CW_ADTT);
+    Darr.forEach(d=>s+=pL('D='+d+'"',CW_NUM));
+    SNarr.forEach(sn=>s+=pL('SN='+sn.toFixed(1),CW_NUM));
+    return s;
+  }
+  function mkEsalDash(){
+    let s=pR('-'.repeat(CW_CODE),CW_CODE)+' '+pR('-'.repeat(CW_TYPE),CW_TYPE)+pL('-'.repeat(CW_ADTT-1),CW_ADTT);
+    Darr.forEach(()=>s+=pL('-'.repeat(CW_NUM-1),CW_NUM));
+    SNarr.forEach(()=>s+=pL('-'.repeat(CW_NUM-1),CW_NUM));
+    return s;
+  }
+  function mkEsalRow(c){
+    const cnt=counts[c]||0;
+    let s=pR(c,CW_CODE)+' '+pR(VEH[c].d,CW_TYPE)+pL(cnt.toLocaleString(),CW_ADTT);
+    Darr.forEach(d=>s+=pL(Math.round(cnt*TF(c,'r',d,PT)*ldf*ddf*365*GF).toLocaleString(),CW_NUM));
+    SNarr.forEach(sn=>s+=pL(Math.round(cnt*TF(c,'f',sn,PT)*ldf*ddf*365*GF).toLocaleString(),CW_NUM));
+    return s;
+  }
+  function mkEsalTotal(){
+    let s=pR('TOTAL',CW_CODE)+' '+pR('ACC.ESAL('+n+'yrs)',CW_TYPE)+pL('',CW_ADTT);
+    totals.forEach(v=>s+=pL(Math.round(v).toLocaleString(),CW_NUM));
+    return s;
+  }
+  function mkTFRow(vt,dv,sv){
+    let s=pR(vt,VTW);
+    dv.forEach(v=>s+=pL(v,DW));
+    s+=' | ';
+    sv.forEach(v=>s+=pL(v,SW));
+    return s;
+  }
+  function mkTFDash(){
+    let s=pR('-'.repeat(VTW),VTW);
+    Darr.forEach(()=>s+=pL('-'.repeat(DW-1),DW));
+    s+=' |-';
+    SNarr.forEach(()=>s+=pL('-'.repeat(SW-1),SW));
+    return s;
+  }
+
+  const dateStr=new Date().toLocaleDateString('th-TH');
+
+  // ── สร้าง lines array พร้อม bold flag ──
+  // format: {t: string, b: bold}
+  // '__SEP__' = separator line (= หรือ -)
+  const EQ='__EQ__', DA='__DA__';
+  const lines=[];
+  const L=(t,b=0)=>lines.push({t,b});
+  const S=(c)=>lines.push({t:c==='='?EQ:DA,b:0});
+
+  S('=');
+  L('TRAFFIC ANALYSIS & ESAL CALCULATION REPORT',1);
+  L('PROJECT: '+proj.toUpperCase(),1);
+  L('Assoc. Prof.Dr. Ittipon Meepon  TTC-KMUTNB',0);
+  S('=');
+  L('DATE: '+dateStr+'                        REPORT v2.6',0);
+  S('-');
+  L('DESIGN PARAMETERS:',1);
+  L('  Analysis Period (n)       : '+n+' Years',0);
+  L('  Growth Rate (r)           : '+(r*100).toFixed(1)+'% (GF = '+GF.toFixed(4)+')',0);
+  L('  LDF / DDF                 : '+ldf.toFixed(2)+' / '+ddf.toFixed(2),0);
+  L('  Terminal Serviceability   : '+PT.toFixed(1),0);
+  S('-');
+  L('',0); // blank
+  L('ACCUMULATED ESAL SUMMARY (n = '+n+' Years):',1);
+  L('',0);
+  L('  [ RIGID PAVEMENT ]',0);
+  Darr.forEach((d,i)=>L('  Thickness D = '+d+'"   :  '+(totals[i]/1e6).toFixed(2)+' M ESAL',0));
+  L('',0);
+  L('  [ FLEXIBLE PAVEMENT ]',0);
+  SNarr.forEach((sn,i)=>L('  SN = '+sn.toFixed(1)+'            :  '+(totals[Darr.length+i]/1e6).toFixed(2)+' M ESAL',0));
+  S('-');
+  L('Generated by ITM-Pave System v2.6 (Retro DOS-Style)',0);
+  S('=');
+  L('',0); // blank
+  L('[ACCUMULATED ESAL REPORT (n='+n+' yrs, pt='+PT.toFixed(1)+')]',1);
+  L(mkEsalHdr(),1);
+  L(mkEsalDash(),0);
+  CODES.forEach(c=>L(mkEsalRow(c),0));
+  S('=');
+  L(mkEsalTotal(),1);
+  L('',0); // blank
+  S('=');
+  L('[TABLE: TRUCK FACTOR REPORT (RIGID VS FLEXIBLE)]',1);
+  L(mkTFRow('VEHICLE TYPE',Darr.map(d=>'D='+d+'"'),SNarr.map(sn=>'SN='+sn.toFixed(1))),0);
+  L(mkTFDash(),0);
+  CODES.forEach(c=>L(mkTFRow(VEH[c].d,Darr.map(d=>TF(c,'r',d,PT).toFixed(3)),SNarr.map(sn=>TF(c,'f',sn,PT).toFixed(3))),0));
+  S('=');
+  L('Generated by ITM-Pave System v2.6 (Retro DOS-Style)',0);
+  S('=');
+
+  // ── คำนวณ LH ให้เต็มหน้าพอดี ──
+  // ทุก line (รวม blank และ SEP) = 1 บรรทัด
+  const totalLines = lines.length;
+  const LH = CH / totalLines;   // mm per line — auto fit
+
+  // ── render ──
+  const doc=new jsPDF({unit:'mm',format:'a4'});
+  doc.setFont('courier','normal');
+  doc.setFontSize(FS);
+  doc.setTextColor(0);
+
+  // วัด SEP length จาก getTextWidth จริง
+  let sepEQ='', sepDA='';
+  doc.setFont('courier','normal');
+  const cw=doc.getTextWidth('=');
+  const nChar=Math.floor(CW/cw);
+  sepEQ='='.repeat(nChar);
+  sepDA='-'.repeat(nChar);
+
+  let y=MT;
+  lines.forEach(({t,b})=>{
+    doc.setFont('courier',b?'bold':'normal');
+    const txt = t===EQ?sepEQ : t===DA?sepDA : t;
+    doc.text(txt,ML,y);
+    y+=LH;
+  });
+
+  doc.save((proj.replace(/[^a-zA-Z0-9ก-๙]/g,'_')||'ESAL_Report')+'_v2.6.pdf');
+}
+
+buildD(); updTraffic();
+</script>
+</body>
+</html>
